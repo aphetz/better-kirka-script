@@ -15,6 +15,7 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     customCss: false,
     hideWeaponsAds: false,
     hideArms: false,
+    leftHanded: false,
     hideFlagAds: false,
     playerHighLight: false,
     fullBlack: false,
@@ -24,6 +25,7 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     adspower: false,
     autoJoin: false,
     inspectKey: "j",
+    menuKey: "click to bind",
     euLobbies: true,
     naLobbies: false,
     asiaLobbies: false,
@@ -36,8 +38,12 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     minTimeLeft: 3,
     filterMaps: false,
     maps: '',
+    customGames: false,
     cssLink: '',
-    menuOpen: true
+    menuOpen: true,
+    volume: 1,
+    noKillSound: false,
+    marketNames: false
 })
 
 const settings = new Store(localStorage.saveSettings);
@@ -48,6 +54,7 @@ let customCss = !!settings.get('customCss');
 //let hpNumber = true;
 let hideWeaponsAds = !!settings.get('hideWeaponsAds');
 let hideArms = !!settings.get('hideArms');
+let leftHanded = !!settings.get('leftHanded');
 let hideFlagAds = !!settings.get('hideFlagAds');
 let playerHighLight = !!settings.get('playerHighLight');
 let fullBlack = !!settings.get('fullBlack');
@@ -56,6 +63,13 @@ let wireframeArms = !!settings.get('wireframeArms');
 let rainbow = !!settings.get('rainbow');
 let adspower = !!settings.get('adspower');
 let autoJoin = !!settings.get('autoJoin');
+let volume = typeof settings.get('volume') == 'undefined' ? 1 : settings.get('volume');
+let noKillSound = !!settings.get('noKillSound');
+
+let volumeSlider;
+let volumeLab;
+
+let marketNames = !!settings.get('marketNames');
 
 
 let inspecting = false;
@@ -68,8 +82,10 @@ let prevWireframeArms = false;
 let gui = document.createElement("div");
 let menuVisible = false;
 
-let listening = false;
+let inspectListening = false;
 if (!settings.get('inspectKey')) settings.set('inspectKey', "j");
+
+let menuListening = false;
 
 let euLobbies = !!settings.get('euLobbies');
 let naLobbies = !!settings.get('naLobbies');
@@ -88,6 +104,7 @@ let gameModes = [];
 let bestLobby = '';
 let allLobbyData = [];
 let maps = settings.get('maps') ? settings.get('maps') : [];
+let customGames = !!settings.get('customGames');
 let responseCount = 0;
 let minPlayerSlider;
 let maxPlayerSlider;
@@ -99,24 +116,42 @@ let settingsButtonsAdded = false;
 
 let scene;
 let flagMaterial;
+let players;
+let gains = [];
+let overlayModel;
 
 WeakMap.prototype.set = new Proxy(WeakMap.prototype.set, {
     apply(target, thisArg, argArray) {
 
-        if (argArray[0] && argArray[0].type === 'Scene' && argArray[0].children[0].type === 'AmbientLight') {
-            scene = argArray[0];
+        if (argArray[0] && argArray[0].type === 'Scene') {
+            if (argArray[0].children[0].type === 'AmbientLight') {
+                scene = argArray[0];
+
+                setTimeout(() => {
+                    scene.children.forEach((e) => {
+                        if (e.type === "Sprite" && !e.material.depthTest && e.material.map?.image?.width === 149) {
+                            flagMaterial = e.material;
+                        }
+                    })
+                }, 1000);
+
+            } else if (argArray[0].children[0].type === 'DirectionalLight') {
+                if (argArray[0].children[3]?.children[0]?.children[0]) {
+                    overlayModel = null;
+                    const t = setInterval(() => {
+                        try {
+                            for (let i = 0; i < argArray[0].children[3].children[0].children.length; i++) {
+                                if (argArray[0].children[3].children[0].children[i].type === "Object3D") overlayModel = argArray[0].children[3].children[0].children[i];
+                            }
+                        } catch {
+                        }
+                        if (overlayModel) clearInterval(t);
+                    });
+                }
+            }
         }
 
-        setTimeout(() => {
-            scene?.children?.forEach((e) => {
-                if (e.type === "Sprite" && !e.material.depthTest && e.material.map?.image?.width === 149) {
-                    flagMaterial = e.material;
-                }
-            })
-        }, 1000)
-
         return Reflect.apply(...arguments);
-
     }
 });
 
@@ -307,7 +342,8 @@ new MutationObserver(mutationRecords => {
     }
 }).observe(document, { childList: true, subtree: true });
 
-
+//old adblock
+/*
 let oldLog = console.log;
 
 console.log = (...arguments) => {
@@ -316,7 +352,15 @@ console.log = (...arguments) => {
     }
     oldLog(...arguments);
 };
+*/
 
+//new adblock
+Object.defineProperty(window, 'aiptag', {
+    set(v) {
+    },
+    get() {
+    }
+});
 
 if (customCss) {
     let cssLinkElem = document.createElement("link");
@@ -336,7 +380,7 @@ gui.innerHTML += "<style>\n" +
     "            box-shadow: 0 0 8px 2px #000000;\n" +
     "            position: absolute;\n" +
     "            left: 200px;\n" +
-    "            top: 100px;\n" +
+    "            top: 60px;\n" +
     "            z-index: 300;\n" +
     "            color: rgb(255, 255, 255);\n" +
     "            padding: 6px;\n" +
@@ -415,6 +459,11 @@ gui.innerHTML += "<style>\n" +
     "    </div>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
+    "        <input type=\"checkbox\" id=\"leftHanded\" name=\"leftHanded\">\n" +
+    "        <label for=\"leftHanded\">Left Handed</label>\n" +
+    "    </div>\n" +
+    "\n" +
+    "    <div class=\"module\">\n" +
     "        <input type=\"checkbox\" id=\"hideflag\" name=\"hideflag\">\n" +
     "        <label for=\"hideflag\">Hide Flag ADS</label>\n" +
     "    </div>\n" +
@@ -446,7 +495,7 @@ gui.innerHTML += "<style>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
     "        Inspect Key\n" +
-    "        <button id=\"bindButton\" style=\"width: 100px\">click to bind</button>\n" +
+    "        <button id=\"inspBindButton\" style=\"width: 100px\">click to bind</button>\n" +
     "    </div>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
@@ -520,7 +569,27 @@ gui.innerHTML += "<style>\n" +
     "        <input type=\"text\" id=\"mapFilterField\" placeholder=\"Map1, Map2, Map3, etc.\">\n" +
     "    </div>\n" +
     "\n" +
+    "    <div class=\"module autojoin\">\n" +
+    "        <input type=\"checkbox\" id=\"customGames\" name=\"customGames\">\n" +
+    "        <label for=\"customGames\">Custom Games </label>\n" +
+    "    </div>\n" +
+    "\n" +
     "    <hr class=\"autojoin\">\n" +
+    "\n" +
+    "    <div class=\"module\">\n" +
+    "        Menu Toggle Key\n" +
+    "        <button id=\"menuBindButton\" style=\"width: 100px\">click to bind</button>\n" +
+    "    </div>\n" +
+    "\n" +
+    "    <div class=\"module\">\n" +
+    "        <input type=\"range\" id=\"volume\" name=\"volume\" min=\"0\" max=\"2\" value=\"1\" step=\"0.1\">\n" +
+    "        <label id=\"volumeLab\" for=\"volume\">Volume</label>\n" +
+    "    </div>\n" +
+    "\n" +
+    "    <div class=\"module\">\n" +
+    "        <input type=\"checkbox\" id=\"noKillSound\" name=\"noKillSound\">\n" +
+    "        <label for=\"noKillSound\">Disable Killsounds (applies after reload)</label>\n" +
+    "    </div>\n" +
     "\n" +
     "    <div class=\"footer\">Toggle With \"PageUp\" Key</div>";
 
@@ -546,6 +615,12 @@ gui.onclick = (e) => {
         hideArms = e.target.checked;
         settings.set('hideArms', hideArms);
     }
+
+    if (e.target.id === "leftHanded") {
+        leftHanded = e.target.checked;
+        settings.set('leftHanded', leftHanded);
+    }
+
 
     if (e.target.id === "hideflag") {
         hideFlagAds = e.target.checked;
@@ -626,6 +701,22 @@ gui.onclick = (e) => {
         settings.set('filterMaps', filterMaps);
     }
 
+    if (e.target.id === "customGames") {
+        customGames = e.target.checked;
+        settings.set('customGames', customGames);
+    }
+
+    if (e.target.id === "noKillSound") {
+        noKillSound = e.target.checked;
+        settings.set('noKillSound', noKillSound);
+    }
+
+    if (e.target.id === "marketNames") {
+        marketNames = e.target.checked;
+        settings.set('marketNames', marketNames);
+    }
+    console.log(e.target.id)
+
 };
 
 gui.style.display = "none";
@@ -640,6 +731,7 @@ document.getElementById("crosshair").checked = permCrosshair;
 document.getElementById("customCSS").checked = customCss;
 document.getElementById("hideweap").checked = hideWeaponsAds;
 document.getElementById("arms").checked = hideArms;
+document.getElementById("leftHanded").checked = leftHanded;
 document.getElementById("hideflag").checked = hideFlagAds;
 document.getElementById("highlight").checked = playerHighLight;
 document.getElementById("black").checked = fullBlack;
@@ -686,14 +778,14 @@ document.getElementById("ffaLobbies").checked = ffaLobbies;
 document.getElementById("tdmLobbies").checked = tdmLobbies;
 document.getElementById("parkourLobbies").checked = parkourLobbies;
 
-let button = document.getElementById("bindButton");
-button.style.fontWeight = "800";
-button.onclick = () => {
-    listening = true;
-    button.innerText = "Press a Key"
+let inspectBindButton = document.getElementById("inspBindButton");
+inspectBindButton.style.fontWeight = "800";
+inspectBindButton.onclick = () => {
+    inspectListening = true;
+    inspectBindButton.innerText = "Press a Key"
 }
 
-button.innerText = settings.get('inspectKey').toUpperCase();
+inspectBindButton.innerText = settings.get('inspectKey').toUpperCase();
 
 let cssField = document.getElementById('cssLink');
 
@@ -726,15 +818,123 @@ for (let name of maps) {
 mapField.value = mapString.slice(0, -2);
 
 mapField.oninput = () => {
-    maps = mapField.value.replaceAll(' ', '').toLowerCase().split(',');
+    maps = mapField.value.replace(/ /g, '').toLowerCase().split(',');
     settings.set('maps', maps);
 }
 
+document.getElementById("customGames").checked = customGames;
 
-window.addEventListener("mouseup", (e) => {
-    if (e.button === 3 || e.button === 4)
-        e.preventDefault();
-});
+let menuBindButton = document.getElementById("menuBindButton");
+menuBindButton.style.fontWeight = "800";
+menuBindButton.onclick = () => {
+    menuListening = true;
+    menuBindButton.innerText = "Press a Key"
+}
+
+menuBindButton.innerText = settings.get("menuKey") !== undefined ? settings.get("menuKey").toUpperCase() : "click to bind";
+
+
+document.getElementById("noKillSound").checked = noKillSound;
+
+
+volumeLab = document.getElementById('volumeLab');
+volumeSlider = document.getElementById("volume");
+
+volumeSlider.onchange = () => {
+    settings.set('volume', Number.parseFloat(volumeSlider.value));
+    for (let i = 0; i < gains.length; i++) {
+        const cur = gains[i];
+        if (cur) cur.value = volume;
+    }
+}
+
+volumeSlider.value = volume;
+
+
+const ingameIds = [
+    '#MTK3Z5', '#4DD3XZ',
+    '#2Q0QKL', '#YYRHG7',
+    '#W5J3AB', '#HVCL3P',
+    '#7PWLQI', '#FAYQ0E'
+];
+
+const badgeLinks = {
+    default: 'https://cdn.discordapp.com/attachments/738010330780926004/1017163938993020939/Untitled-finalihope.png',
+    '#MTK3Z5': 'https://cdn.discordapp.com/attachments/1010612280775422093/1019727079320854528/rsz_2667.png',
+    '#4DD3XZ': '',
+    '#2Q0QKL': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
+    '#YYRHG7': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
+    '#W5J3AB': '',
+    '#HVCL3P': '',
+    '#7PWLQI': '',
+    '#FAYQ0E': ''
+};
+
+let imgTags = [];
+let hasPlayerList = false;
+
+
+function appendBadges() {
+    players.querySelectorAll('.short-id').forEach((e) => {
+
+        if (ingameIds.includes(e.innerText)) {
+            let img = document.createElement("img");
+
+            img.src = badgeLinks[e.innerText] !== '' ? badgeLinks[e.innerText] : badgeLinks.default;
+
+            imgTags.push(img);
+
+            e.parentElement.children[1].append(img);
+        }
+
+    });
+}
+
+setInterval(() => {
+
+
+    players = document.getElementsByClassName('players')?.[0];
+
+    if (!players) gains = [];
+
+    if (!hasPlayerList && players) {
+
+        appendBadges();
+
+        const observer = new MutationObserver((mutation) => {
+
+            let n = false;
+
+            mutation.forEach((e) => {
+                e.addedNodes.forEach((f) => {
+                    if (f.nodeName === "IMG") n = true;
+                });
+            });
+
+            if (n) return;
+
+            for (let imgTag of imgTags) {
+                if (imgTag) imgTag.parentElement.removeChild(imgTag);
+            }
+
+            imgTags = [];
+
+            appendBadges();
+
+        });
+        observer.observe(players, {
+            attributes: true,
+            characterData: true,
+            childList: true,
+            subtree: true,
+            attributeOldValue: true,
+            characterDataOldValue: true
+        });
+    }
+
+    hasPlayerList = !!players;
+}, 1000);
+
 
 //hp numbers default ingame now
 /*const observer = new MutationObserver(function (mutations) {
@@ -745,22 +945,35 @@ window.addEventListener("mouseup", (e) => {
 
 let scoped = false;
 
+
 document.addEventListener('mousedown', (e) => {
-    if (e.button === 2) scoped = true;
+    if (e.button === 2) {
+        scoped = true;
+        inspecting = false;
+    }
 });
 
 document.addEventListener('mouseup', (e) => {
     if (e.button === 2) scoped = false;
+    if (e.button === 3 || e.button === 4) e.preventDefault();
+
 });
 
 let inspectedWeapon;
 
 document.addEventListener('keydown', (e) => {
 
-    if (listening) {
+    if (inspectListening) {
         settings.set('inspectKey', e.key);
-        document.getElementById("bindButton").innerText = e.key.toUpperCase();
-        listening = false;
+        document.getElementById("inspBindButton").innerText = e.key.toUpperCase();
+        inspectListening = false;
+    }
+
+    if (menuListening) {
+        settings.set('menuKey', e.key);
+        document.getElementById("menuBindButton").innerText = e.key.toUpperCase();
+        menuListening = false;
+        toggleGui();
     }
 
     if (e.key === settings.get("inspectKey").toLowerCase()) {
@@ -770,7 +983,7 @@ document.addEventListener('keydown', (e) => {
         }, 3000);
     }
 
-    if (e.code === "PageUp") {
+    if (e.key.toLowerCase() === settings.get("menuKey")?.toLowerCase() || e.key === "PageUp") {
         toggleGui();
     }
 
@@ -780,8 +993,7 @@ let r = 255;
 let g = 0;
 let b = 0;
 
-function animate() {
-    window.requestAnimationFrame(animate);
+setInterval(() => {
     if (rainbow) {
         if (r > 0 && b === 0) {
             r--;
@@ -801,6 +1013,11 @@ function animate() {
         g = color.g;
         b = color.b;
     }
+}, 4);
+
+function animate() {
+
+    window.requestAnimationFrame(animate);
 
     if (menuVisible) {
         if (minPlayerSlider) {
@@ -816,6 +1033,11 @@ function animate() {
             minTimeLeft = Number.parseInt(minTimeLeftSlider.value);
             minTimeLeftLab.innerText = minTimeLeftSlider.value + " min. Time Left";
         }
+
+        if (volumeSlider) {
+            volume = Number.parseFloat(volumeSlider.value);
+            volumeLab.innerText = "Volume: " + volumeSlider.value;
+        }
     }
 
     if (flagMaterial) {
@@ -823,6 +1045,14 @@ function animate() {
             flagMaterial.visible = !scoped;
         } else {
             flagMaterial.visible = true;
+        }
+    }
+
+    if (overlayModel) {
+        if (leftHanded) {
+            overlayModel.scale.x = -1;
+        } else {
+            overlayModel.scale.x = 1;
         }
     }
 
@@ -917,9 +1147,10 @@ function animate() {
     } catch {
     }
     try {
+        let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
+
         for (let i = 0; i < scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"].length; i++) {
 
-            let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
             let player = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"][i]["_components"];
             let mat = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"][i]["_components"][0].value.children[0].children[0].children[1].material;
 
@@ -1055,6 +1286,7 @@ function checkSearchLobby() {
 
     let fittingLobbies = [];
     for (let i = 0; i < allLobbyData.length; i++) {
+        if (allLobbyData[i].metadata.custom === true && !customGames) continue;
         if (allLobbyData[i].locked === false && allLobbyData[i].clients >= minPlayers && allLobbyData[i].clients <= maxPlayers && gameModes.includes(allLobbyData[i].name) && minutesLeft(allLobbyData[i].createdAt) >= minTimeLeft && (maps.includes(allLobbyData[i].metadata.mapName.toLowerCase()) || !filterMaps)) {
             if (avoidSameLobby) {
                 if (!currentURL.includes(allLobbyData[i].roomId)) {
@@ -1132,3 +1364,24 @@ Object.defineProperty = (...args) => {
     }
     return oldDefine(...args);
 }
+
+Object.defineProperty(Object.prototype, 'gain', {
+    set(v) {
+        if (v.gain) {
+            v.gain.value = volume;
+            gains.push(v.gain);
+        }
+        this._v = v;
+    },
+    get() {
+        return this._v;
+    }
+});
+
+Object.defineProperty(Audio.prototype, 'muted', {
+    set(v) {
+    },
+    get() {
+        return noKillSound;
+    }
+});
