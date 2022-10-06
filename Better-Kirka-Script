@@ -861,7 +861,7 @@ const ingameIds = [
 const badgeLinks = {
     default: 'https://cdn.discordapp.com/attachments/738010330780926004/1017163938993020939/Untitled-finalihope.png',
     '#MTK3Z5': 'https://cdn.discordapp.com/attachments/1010612280775422093/1019727079320854528/rsz_2667.png',
-    '#4DD3XZ': '',
+    '#4DD3XZ': 'https://cdn.discordapp.com/attachments/738010330780926004/1027331355656331376/unknown.png',
     '#2Q0QKL': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
     '#YYRHG7': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
     '#W5J3AB': '',
@@ -1149,10 +1149,10 @@ function animate() {
     try {
         let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
 
-        for (let i = 0; i < scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"].length; i++) {
+        for (let i = 0; i < scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"].players.entities.length; i++) {
 
-            let player = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"][i]["_components"];
-            let mat = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"]["animationEntities"]["entities"][i]["_components"][0].value.children[0].children[0].children[1].material;
+            let player = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"].players.entities[i]["_components"];
+            let mat = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"].players.entities[i]["_components"][0].value.children[0].children[0].children[1].material;
 
             if ((mat.color.r === 1 && mat.color.g < 1 && mat.color.b < 1) || !playerHighLight) continue;
 
@@ -1354,7 +1354,9 @@ Object.defineProperty = (...args) => {
         if (args[0].WnNMwm) {
             Object.defineProperty(args[0].camera, "fov", {
                 get() {
-                    return adspower ? args[0].WnNMwm.fov : this.vFov;
+                    let returnValue = Number.parseInt(args[0].WnNMwm.fov);
+                    if(!adspower && this.vFov) returnValue = this.vFov;
+                    return returnValue;
                 },
                 set(v) {
                     this.vFov = v;
