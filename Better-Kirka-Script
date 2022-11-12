@@ -135,19 +135,8 @@ WeakMap.prototype.set = new Proxy(WeakMap.prototype.set, {
                     })
                 }, 1000);
 
-            } else if (argArray[0].children[0].type === 'DirectionalLight') {
-                if (argArray[0].children[3]?.children[0]?.children[0]) {
-                    overlayModel = null;
-                    const t = setInterval(() => {
-                        try {
-                            for (let i = 0; i < argArray[0].children[3].children[0].children.length; i++) {
-                                if (argArray[0].children[3].children[0].children[i].type === "Object3D") overlayModel = argArray[0].children[3].children[0].children[i];
-                            }
-                        } catch {
-                        }
-                        if (overlayModel) clearInterval(t);
-                    });
-                }
+            } else if (argArray[0]?.children[0]?.children[0]?.type === "PerspectiveCamera") {
+                overlayModel = argArray[0].children[0].children[0].children[0];
             }
         }
 
@@ -1110,17 +1099,17 @@ function animate() {
             armsMaterial.color.r = r / 255;
             armsMaterial.color.g = g / 255;
             armsMaterial.color.b = b / 255;
-            armsMaterial.emissive.r = r / 255;
+            /*armsMaterial.emissive.r = r / 255;
             armsMaterial.emissive.g = g / 255;
-            armsMaterial.emissive.b = b / 255;
+            armsMaterial.emissive.b = b / 255;*/
         } else if (prevWireframeArms) {
             armsMaterial.wireframe = false;
             armsMaterial.color.r = 1;
             armsMaterial.color.g = 1;
             armsMaterial.color.b = 1;
-            armsMaterial.emissive.r = 0;
+           /* armsMaterial.emissive.r = 0;
             armsMaterial.emissive.g = 0;
-            armsMaterial.emissive.b = 0;
+            armsMaterial.emissive.b = 0;*/
         }
 
         if (wireframeWeapons) {
@@ -1128,17 +1117,17 @@ function animate() {
             weaponMaterial.color.r = r / 255;
             weaponMaterial.color.g = g / 255;
             weaponMaterial.color.b = b / 255;
-            weaponMaterial.emissive.r = r / 255;
+            /*weaponMaterial.emissive.r = r / 255;
             weaponMaterial.emissive.g = g / 255;
-            weaponMaterial.emissive.b = b / 255;
+            weaponMaterial.emissive.b = b / 255;*/
         } else if (prevWireframeWeapons) {
             weaponMaterial.wireframe = false;
             weaponMaterial.color.r = 1;
             weaponMaterial.color.g = 1;
             weaponMaterial.color.b = 1;
-            weaponMaterial.emissive.r = 0;
+            /*weaponMaterial.emissive.r = 0;
             weaponMaterial.emissive.g = 0;
-            weaponMaterial.emissive.b = 0;
+            weaponMaterial.emissive.b = 0;*/
         }
 
         prevWireframeWeapons = wireframeWeapons;
@@ -1146,6 +1135,7 @@ function animate() {
 
     } catch {
     }
+
     try {
         let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
 
