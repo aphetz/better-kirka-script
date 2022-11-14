@@ -18,7 +18,7 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     leftHanded: false,
     hideFlagAds: false,
     playerHighLight: false,
-    fullBlack: false,
+    rgbHighlight: false,
     wireframeWeapons: false,
     wireframeArms: false,
     rainbow: false,
@@ -43,8 +43,10 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     menuOpen: true,
     volume: 1,
     noKillSound: false,
-    marketNames: false
-})
+    marketNames: false,
+    customHitmarker: false,
+    customHitmarkerSrc: ''
+});
 
 const settings = new Store(localStorage.saveSettings);
 
@@ -57,7 +59,7 @@ let hideArms = !!settings.get('hideArms');
 let leftHanded = !!settings.get('leftHanded');
 let hideFlagAds = !!settings.get('hideFlagAds');
 let playerHighLight = !!settings.get('playerHighLight');
-let fullBlack = !!settings.get('fullBlack');
+let rgbHighlight = !!settings.get('rgbHighlight');
 let wireframeWeapons = !!settings.get('wireframeWeapons');
 let wireframeArms = !!settings.get('wireframeArms');
 let rainbow = !!settings.get('rainbow');
@@ -113,6 +115,8 @@ let maxPlayersLab;
 let minTimeLeftSlider;
 let minTimeLeftLab;
 let settingsButtonsAdded = false;
+let customHitmarker = !!settings.get('customHitmarker');
+let customHitmarkerSrc = !!settings.get('customHitmarkerSrc');
 
 let scene;
 let flagMaterial;
@@ -463,8 +467,8 @@ gui.innerHTML += "<style>\n" +
     "    </div>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
-    "        <input type=\"checkbox\" id=\"black\" name=\"black\">\n" +
-    "        <label for=\"black\">Black Players</label>\n" +
+    "        <input type=\"checkbox\" id=\"rgbHighlight\" name=\"rgbHighlight\">\n" +
+    "        <label for=\"rgbHighlight\">Rainbow Highlighting</label>\n" +
     "    </div>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
@@ -580,6 +584,12 @@ gui.innerHTML += "<style>\n" +
     "        <label for=\"noKillSound\">Disable Killsounds (applies after reload)</label>\n" +
     "    </div>\n" +
     "\n" +
+    "    <div class=\"module\">\n" +
+    "        <input type=\"checkbox\" id=\"customHitmarker\" name=\"customHitmarker\">\n" +
+    "        <label for=\"customHitmarkerLink\">Hitmarker Link: </label>\n" +
+    "        <input type=\"text\" id=\"customHitmarkerLink\" placeholder=\"Paste Hitmarker Link\">\n" +
+    "    </div>\n" +
+    "\n" +
     "    <div class=\"footer\">Toggle With \"PageUp\" Key</div>";
 
 
@@ -622,9 +632,9 @@ gui.onclick = (e) => {
         settings.set('playerHighLight', playerHighLight);
     }
 
-    if (e.target.id === "black") {
-        fullBlack = e.target.checked;
-        settings.set('fullBlack', fullBlack);
+    if (e.target.id === "rgbHighlight") {
+        rgbHighlight = e.target.checked;
+        settings.set('rgbHighlight', rgbHighlight);
     }
 
     if (e.target.id === "wireframeWeapons") {
@@ -704,7 +714,11 @@ gui.onclick = (e) => {
         marketNames = e.target.checked;
         settings.set('marketNames', marketNames);
     }
-    console.log(e.target.id)
+
+    if (e.target.id === "customHitmarker") {
+        customHitmarker = e.target.checked;
+        settings.set('customHitmarker', customHitmarker);
+    }
 
 };
 
@@ -723,7 +737,7 @@ document.getElementById("arms").checked = hideArms;
 document.getElementById("leftHanded").checked = leftHanded;
 document.getElementById("hideflag").checked = hideFlagAds;
 document.getElementById("highlight").checked = playerHighLight;
-document.getElementById("black").checked = fullBlack;
+document.getElementById("rgbHighlight").checked = rgbHighlight;
 document.getElementById("wireframeWeapons").checked = wireframeWeapons;
 document.getElementById("wireframeArms").checked = wireframeArms;
 document.getElementById("rainbow").checked = rainbow;
@@ -839,12 +853,21 @@ volumeSlider.onchange = () => {
 
 volumeSlider.value = volume;
 
+let customHitmarkerField = document.getElementById('customHitmarkerLink');
+
+if (settings.get('customHitmarkerLink') === undefined) settings.set('customHitmarkerLink', '');
+
+customHitmarkerField.value = settings.get('customHitmarkerLink');
+
+customHitmarkerField.oninput = () => {
+    settings.set('customHitmarkerLink', customHitmarkerField.value);
+}
+
+document.getElementById("customHitmarker").checked = customHitmarker;
+
 
 const ingameIds = [
-    '#MTK3Z5', '#4DD3XZ',
-    '#2Q0QKL', '#YYRHG7',
-    '#W5J3AB', '#HVCL3P',
-    '#7PWLQI', '#FAYQ0E'
+    '#MTK3Z5', '#4DD3XZ', '#2Q0QKL', '#YYRHG7', '#W5J3AB', '#6FIJZY', '#HVCL3P', '#7PWLQI', '#FAYQ0E', '#QCZSZK', '#6L1WRO', '#Z37B0Z', '#6IUE15', '#UVPIAP', '#4HCBF4', '#QH8CEO'
 ];
 
 const badgeLinks = {
@@ -854,9 +877,17 @@ const badgeLinks = {
     '#2Q0QKL': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
     '#YYRHG7': 'https://cdn.discordapp.com/attachments/738010330780926004/1020042667276632084/devbadge.png',
     '#W5J3AB': '',
+    '#6FIJZY': '',
     '#HVCL3P': '',
     '#7PWLQI': '',
-    '#FAYQ0E': ''
+    '#FAYQ0E': '',
+    '#QCZSZK': '',
+    '#6L1WRO': '',
+    '#Z37B0Z': 'https://cdn.discordapp.com/attachments/738010330780926004/1040977499384979517/b57d2718c0f2330c0e06166d4b5fb606.png',
+    '#6IUE15': 'https://cdn.discordapp.com/attachments/738010330780926004/1040977499384979517/b57d2718c0f2330c0e06166d4b5fb606.png',
+    '#UVPIAP': '',
+    '#4HCBF4': 'https://cdn.discordapp.com/attachments/738010330780926004/1040977499384979517/b57d2718c0f2330c0e06166d4b5fb606.png',
+    '#QH8CEO': ''
 };
 
 let imgTags = [];
@@ -925,6 +956,69 @@ setInterval(() => {
 }, 1000);
 
 
+//credit to Sheriff for the cw time display
+
+let isClanWarPage = false
+let updating = false
+
+async function clanWarUsers() {
+
+    let clanLb = await fetch("https://api.kirka.io/api/leaderboard/clanChampionship", {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://kirka.io/hub/clans/champions-league",
+        "referrerPolicy": "no-referrer-when-downgrade",
+        "body": null,
+        "method": "GET",
+    })
+
+    let clanLbJson = await clanLb.json()
+
+    document.getElementsByClassName("reset-time")[0].innerHTML = '<svg data-v-49b1054a="" data-v-0684cd73="" xmlns="http://www.w3.org/2000/svg" class="time svg-icon svg-icon--clock"><!----><use data-v-49b1054a="" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/img/icons.6e41b8dd.svg#clock"></use></svg> Reset in ' + Math.floor(clanLbJson.remainingTime / 86400000) + "d " + Math.floor((clanLbJson.remainingTime / 86400000 - Math.floor(clanLbJson.remainingTime / 86400000)) * 24) + "h " + Math.floor(((clanLbJson.remainingTime / 86400000 - Math.floor(clanLbJson.remainingTime / 86400000)) * 24 - Math.floor((clanLbJson.remainingTime / 86400000 - Math.floor(clanLbJson.remainingTime / 86400000)) * 24)) * 60) + "m"
+    updating = false
+}
+
+let previousUrl = "";
+
+const observer = new MutationObserver(() => {
+
+    if (window.location.href !== previousUrl) {
+        previousUrl = window.location.href;
+        if (window.location.href === "https://kirka.io/hub/clans/champions-league") {
+            isClanWarPage = true
+        } else {
+            isClanWarPage = false
+            updating = false
+        }
+    }
+
+    if (isClanWarPage) {
+        if (document.getElementsByClassName("reset-time")[0]) {
+            if (!document.getElementsByClassName("reset-time")[0].innerText.includes("d") || !document.getElementsByClassName("reset-time")[0].innerText.includes("h") || !document.getElementsByClassName("reset-time")[0].innerText.includes("m")) {
+                if (!updating) {
+                    updating = true;
+                    clanWarUsers();
+                }
+            }
+        }
+    }
+
+    if (document.getElementsByClassName("hit")[0] && customHitmarker && settings.get('customHitmarkerLink') && settings.get('customHitmarkerLink') !== '') {
+        document.getElementsByClassName("hit")[0].src = settings.get('customHitmarkerLink');
+    }
+
+});
+
+observer.observe(document, {
+    subtree: true,
+    childList: true
+});
+
+
+
+
 //hp numbers default ingame now
 /*const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
@@ -978,31 +1072,62 @@ document.addEventListener('keydown', (e) => {
 
 });
 
-let r = 255;
-let g = 0;
-let b = 0;
+let redWireframe = 255;
+let greenWireframe = 0;
+let blueWireframe = 0;
+
+let redHighlight = 255;
+let greenHighlight = 0;
+let blueHighlight = 0;
 
 setInterval(() => {
+
     if (rainbow) {
-        if (r > 0 && b === 0) {
-            r--;
-            g++;
+        if (redWireframe > 0 && blueWireframe === 0) {
+            redWireframe--;
+            greenWireframe++;
         }
-        if (g > 0 && r === 0) {
-            g--;
-            b++;
+        if (greenWireframe > 0 && redWireframe === 0) {
+            greenWireframe--;
+            blueWireframe++;
         }
-        if (b > 0 && g === 0) {
-            r++;
-            b--;
+        if (blueWireframe > 0 && greenWireframe === 0) {
+            redWireframe++;
+            blueWireframe--;
         }
     } else {
         let color = hexToRgb("#ff0000");
-        r = color.r;
-        g = color.g;
-        b = color.b;
+        redWireframe = color.r;
+        greenWireframe = color.g;
+        blueWireframe = color.b;
     }
+
+    if (rgbHighlight) {
+        if (redHighlight > 0 && blueHighlight === 0) {
+            redHighlight--;
+            greenHighlight++;
+        }
+        if (greenHighlight > 0 && redHighlight === 0) {
+            greenHighlight--;
+            blueHighlight++;
+        }
+        if (blueHighlight > 0 && greenHighlight === 0) {
+            redHighlight++;
+            blueHighlight--;
+        }
+    } else {
+        let color = hexToRgb("#ff0000");
+        redHighlight = color.r;
+        greenHighlight = color.g;
+        blueHighlight = color.b;
+    }
+
 }, 4);
+
+let armsMaterial;
+let protectedPlayers = [];
+let playerList;
+
 
 function animate() {
 
@@ -1013,6 +1138,7 @@ function animate() {
             minPlayers = Number.parseInt(minPlayerSlider.value);
             minPlayersLab.innerText = minPlayerSlider.value + " min. Players";
         }
+
         if (maxPlayerSlider) {
             maxPlayers = Number.parseInt(maxPlayerSlider.value);
             maxPlayersLab.innerText = maxPlayerSlider.value + " max. Players";
@@ -1045,7 +1171,8 @@ function animate() {
         }
     }
 
-    if (crosshair && permCrosshair) crosshair.style = "visibility: visible !important; opacity: 1 !important; display: block !important;"
+    if (crosshair && permCrosshair) crosshair.style = "visibility: visible !important; opacity: 1 !important; display: block !important; transition: none; !important"
+
 
     try {
 
@@ -1061,13 +1188,29 @@ function animate() {
             arms = false;
         }
 
-        const weaponModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"][weap]["model"];
-        const armsMaterial = weaponModel["parent"]["children"]["0"]["material"];
-        const weaponMaterial = weaponModel["children"][num]["material"];
+        const weaponModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"][weap]?.model;
 
-        armsMaterial.visible = arms;
+        const sharkModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Shark?.model;
+        const bayonetModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Bayonet?.model;
+        const tomahawnModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Tomahawk?.model;
 
-        if (hideWeaponsAds) weaponMaterial.visible = !scoped;
+        if (weaponModel?.parent?.children[0]) armsMaterial = weaponModel.parent.children[0].material;
+
+        const weaponMaterial = weaponModel?.children[num].material;
+        const sharkMaterial = sharkModel?.children[3]?.material;
+        const bayonetMaterial = bayonetModel?.children[1]?.material;
+        const tomahawkMaterial = tomahawnModel?.children[1]?.material;
+
+
+        if (armsMaterial) armsMaterial.visible = arms;
+
+        if (hideWeaponsAds) {
+
+            if (weaponMaterial) weaponMaterial.visible = !scoped;
+            if (sharkMaterial) sharkMaterial.visible = !scoped;
+            if (bayonetMaterial) bayonetMaterial.visible = !scoped;
+            if (tomahawkMaterial) tomahawkMaterial.visible = !scoped;
+        }
 
         if (inspecting) {
             if (!prevInsp) {
@@ -1094,40 +1237,22 @@ function animate() {
 
         prevInsp = inspecting;
 
-        if (wireframeArms) {
-            armsMaterial.wireframe = true;
-            armsMaterial.color.r = r / 255;
-            armsMaterial.color.g = g / 255;
-            armsMaterial.color.b = b / 255;
-            /*armsMaterial.emissive.r = r / 255;
-            armsMaterial.emissive.g = g / 255;
-            armsMaterial.emissive.b = b / 255;*/
-        } else if (prevWireframeArms) {
-            armsMaterial.wireframe = false;
-            armsMaterial.color.r = 1;
-            armsMaterial.color.g = 1;
-            armsMaterial.color.b = 1;
-           /* armsMaterial.emissive.r = 0;
-            armsMaterial.emissive.g = 0;
-            armsMaterial.emissive.b = 0;*/
+        if (wireframeArms && armsMaterial) {
+            setWireframe(true, armsMaterial);
+        } else if (prevWireframeArms && armsMaterial) {
+            setWireframe(false, armsMaterial);
         }
 
         if (wireframeWeapons) {
-            weaponMaterial.wireframe = true;
-            weaponMaterial.color.r = r / 255;
-            weaponMaterial.color.g = g / 255;
-            weaponMaterial.color.b = b / 255;
-            /*weaponMaterial.emissive.r = r / 255;
-            weaponMaterial.emissive.g = g / 255;
-            weaponMaterial.emissive.b = b / 255;*/
+            if (weaponMaterial) setWireframe(true, weaponMaterial);
+            if (sharkMaterial) setWireframe(true, sharkMaterial);
+            if (bayonetMaterial) setWireframe(true, bayonetMaterial);
+            if (tomahawkMaterial) setWireframe(true, tomahawkMaterial);
         } else if (prevWireframeWeapons) {
-            weaponMaterial.wireframe = false;
-            weaponMaterial.color.r = 1;
-            weaponMaterial.color.g = 1;
-            weaponMaterial.color.b = 1;
-            /*weaponMaterial.emissive.r = 0;
-            weaponMaterial.emissive.g = 0;
-            weaponMaterial.emissive.b = 0;*/
+            if (weaponMaterial) setWireframe(false, weaponMaterial);
+            if (sharkMaterial) setWireframe(false, sharkMaterial);
+            if (bayonetMaterial) setWireframe(false, bayonetMaterial);
+            if (tomahawkMaterial) setWireframe(false, tomahawkMaterial);
         }
 
         prevWireframeWeapons = wireframeWeapons;
@@ -1137,35 +1262,48 @@ function animate() {
     }
 
     try {
+
+        protectedPlayers = []
+
+        playerList?.$items.forEach((e) => {
+            if (e && e.spawnProtected) protectedPlayers.push(e.name);
+        });
+
+
         let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
 
         let qNum = 2;
 
-        if(!scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"].players) qNum = 3;
+        if (!scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["2"]["_queries"].players) qNum = 3;
 
         for (let i = 0; i < scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"][qNum]["_queries"].players.entities.length; i++) {
 
             let player = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"][qNum]["_queries"].players.entities[i]["_components"];
             let mat = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"][qNum]["_queries"].players.entities[i]["_components"][0].value.children[0].children[0].children[1].material;
 
-            if ((mat.color.r === 1 && mat.color.g < 1 && mat.color.b < 1) || !playerHighLight) continue;
+            if (!playerHighLight) continue;
 
             let color = hexToRgb("#0000ff");
             if (!localPlayerClass.team || localPlayerClass.team !== player["50"].team) {
                 color = hexToRgb("#ff0000");
-                if (fullBlack) color = hexToRgb('#000000')
+                if (protectedPlayers.includes(player["50"].name)) color = hexToRgb('#ff2222');
             }
 
-            let r = color.r * Number.MAX_SAFE_INTEGER;
-            let g = color.g * Number.MAX_SAFE_INTEGER;
-            let b = color.b * Number.MAX_SAFE_INTEGER;
+            let r = (rgbHighlight ? redHighlight : color.r) / 255;
+            let g = (rgbHighlight ? greenHighlight : color.g) / 255;
+            let b = (rgbHighlight ? blueHighlight : color.b) / 255;
 
-            mat.map = null;
-            mat.color.r = r;
-            mat.color.g = g;
-            mat.color.b = b;
+            let matCpy = mat.clone();
 
-            mat.needsUpdate = true;
+            matCpy.map = null;
+
+            matCpy.color.r = r;
+            matCpy.color.g = g;
+            matCpy.color.b = b;
+
+            matCpy.needsUpdate = true;
+
+            scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"][qNum]["_queries"].players.entities[i]["_components"][0].value.children[0].children[0].children[1].material = matCpy;
 
         }
     } catch {
@@ -1321,6 +1459,13 @@ function checkSearchLobby() {
     } else alert('No Lobby found - consider changing your settings'); //popup ohne alert?
 }
 
+function setWireframe(bool, material) {
+    material.wireframe = bool;
+    material.color.r = bool ? redWireframe / 255 : 1;
+    material.color.g = bool ? greenWireframe / 255 : 1;
+    material.color.b = bool ? blueWireframe / 255 : 1;
+}
+
 
 function toggleGui() {
     menuVisible = !menuVisible;
@@ -1342,6 +1487,16 @@ function hexToRgb(hex) {
     } : null;
 }
 
+Object.defineProperty(Object.prototype, '_players', {
+    set(v) {
+        this._p = v;
+        playerList = v;
+    },
+    get() {
+        return this._p;
+    }
+});
+
 let oldDefine = Object.defineProperty;
 Object.defineProperty = (...args) => {
     if (args[0] && args[1] && args[1] === 'renderer' && args[0].constructor.name.startsWith('_0x')) {
@@ -1349,7 +1504,7 @@ Object.defineProperty = (...args) => {
             Object.defineProperty(args[0].camera, "fov", {
                 get() {
                     let returnValue = Number.parseInt(args[0].WnNMwm.fov);
-                    if(!adspower && this.vFov) returnValue = this.vFov;
+                    if (!adspower && this.vFov) returnValue = this.vFov;
                     return returnValue;
                 },
                 set(v) {
