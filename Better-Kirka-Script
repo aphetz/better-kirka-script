@@ -867,7 +867,7 @@ document.getElementById("customHitmarker").checked = customHitmarker;
 
 
 const ingameIds = [
-    '#MTK3Z5', '#4DD3XZ', '#2Q0QKL', '#YYRHG7', '#W5J3AB', '#6FIJZY', '#HVCL3P', '#7PWLQI', '#FAYQ0E', '#QCZSZK', '#6L1WRO', '#Z37B0Z', '#6IUE15', '#UVPIAP', '#4HCBF4', '#QH8CEO', '#UH98AE'
+    '#MTK3Z5', '#4DD3XZ', '#2Q0QKL', '#YYRHG7', '#W5J3AB', '#6FIJZY', '#HVCL3P', '#7PWLQI', '#FAYQ0E', '#QCZSZK', '#6L1WRO', '#Z37B0Z', '#6IUE15', '#UVPIAP', '#4HCBF4', '#QH8CEO', '#UH98AE', '#Y64AN1'
 ];
 
 const badgeLinks = {
@@ -888,7 +888,8 @@ const badgeLinks = {
     '#UVPIAP': '',
     '#4HCBF4': 'https://cdn.discordapp.com/attachments/738010330780926004/1040977499384979517/b57d2718c0f2330c0e06166d4b5fb606.png',
     '#QH8CEO': '',
-    '#UH98AE': ''
+    '#UH98AE': '',
+    '#Y64AN1': ''
     
 };
 
