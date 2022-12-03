@@ -18,6 +18,7 @@ if (!localStorage.saveSettings) localStorage.saveSettings = JSON.stringify({
     leftHanded: false,
     hideFlagAds: false,
     playerHighLight: false,
+    weaponHighlighter: false,
     rgbHighlight: false,
     wireframeWeapons: false,
     wireframeArms: false,
@@ -59,6 +60,7 @@ let hideArms = !!settings.get('hideArms');
 let leftHanded = !!settings.get('leftHanded');
 let hideFlagAds = !!settings.get('hideFlagAds');
 let playerHighLight = !!settings.get('playerHighLight');
+let weaponHighlighter = !!settings.get('weaponHighlighter');
 let rgbHighlight = !!settings.get('rgbHighlight');
 let wireframeWeapons = !!settings.get('wireframeWeapons');
 let wireframeArms = !!settings.get('wireframeArms');
@@ -379,7 +381,8 @@ gui.innerHTML += "<style>\n" +
     "            padding: 6px;\n" +
     "            font-family: \"Titillium Web\", serif;\n" +
     "            line-height: 1.6;\n" +
-    "            border-radius: 3px\n" +
+    "            border-radius: 3px;\n" +
+    "            max-width: 390px;\n" +
     "        }\n" +
     "\n" +
     "        input:disabled {\n" +
@@ -389,7 +392,7 @@ gui.innerHTML += "<style>\n" +
     "        }\n" +
     "\n" +
     "        .heading {\n" +
-    "            width: 300px;\n" +
+    "            width: 380px;\n" +
     "            height: 40px;\n" +
     "            display: flex;\n" +
     "            justify-content: center;\n" +
@@ -404,7 +407,7 @@ gui.innerHTML += "<style>\n" +
     "        }\n" +
     "\n" +
     "        .footer {\n" +
-    "            width: 300px;\n" +
+    "            width: 380px;\n" +
     "            height: 20px;\n" +
     "            display: flex;\n" +
     "            justify-content: center;\n" +
@@ -464,6 +467,11 @@ gui.innerHTML += "<style>\n" +
     "    <div class=\"module\">\n" +
     "        <input type=\"checkbox\" id=\"highlight\" name=\"highlight\">\n" +
     "        <label for=\"highlight\">Highlight Players</label>\n" +
+    "    </div>\n" +
+    "\n" +
+    "    <div class=\"module\">\n" +
+    "        <input type=\"checkbox\" id=\"weaponHighlighter\" name=\"weaponHighlighter\">\n" +
+    "        <label for=\"weaponHighlighter\">Weapon Highlighting</label>\n" +
     "    </div>\n" +
     "\n" +
     "    <div class=\"module\">\n" +
@@ -632,6 +640,11 @@ gui.onclick = (e) => {
         settings.set('playerHighLight', playerHighLight);
     }
 
+    if (e.target.id === "weaponHighlighter") {
+        weaponHighlighter = e.target.checked;
+        settings.set('weaponHighlighter', weaponHighlighter);
+    }
+
     if (e.target.id === "rgbHighlight") {
         rgbHighlight = e.target.checked;
         settings.set('rgbHighlight', rgbHighlight);
@@ -731,12 +744,25 @@ if (settings.get('menuOpen') === undefined || settings.get('menuOpen')) {
 }
 
 document.getElementById("crosshair").checked = permCrosshair;
+
 document.getElementById("customCSS").checked = customCss;
+
+const cssField = document.getElementById('cssLink');
+
+if (settings.get('cssLink') === undefined) settings.set('cssLink', '');
+
+cssField.value = settings.get('cssLink');
+
+cssField.oninput = () => {
+    settings.set('cssLink', cssField.value);
+}
+
 document.getElementById("hideweap").checked = hideWeaponsAds;
 document.getElementById("arms").checked = hideArms;
 document.getElementById("leftHanded").checked = leftHanded;
 document.getElementById("hideflag").checked = hideFlagAds;
 document.getElementById("highlight").checked = playerHighLight;
+document.getElementById("weaponHighlighter").checked = weaponHighlighter;
 document.getElementById("rgbHighlight").checked = rgbHighlight;
 document.getElementById("wireframeWeapons").checked = wireframeWeapons;
 document.getElementById("wireframeArms").checked = wireframeArms;
@@ -789,16 +815,6 @@ inspectBindButton.onclick = () => {
 }
 
 inspectBindButton.innerText = settings.get('inspectKey').toUpperCase();
-
-let cssField = document.getElementById('cssLink');
-
-if (settings.get('cssLink') === undefined) settings.set('cssLink', '');
-
-cssField.value = settings.get('cssLink');
-
-cssField.oninput = () => {
-    settings.set('cssLink', cssField.value);
-}
 
 let filter = document.getElementById("preferredFilter");
 
@@ -890,8 +906,15 @@ const badgeLinks = {
     '#QH8CEO': '',
     '#UH98AE': '',
     '#C8KLSB': '',
-    '#Y64AN1': ''
-    
+    '#Y64AN1': '',
+    '#D84BWU': 'https://cdn.discordapp.com/attachments/738010330780926004/1046046359884677170/greentick.png',
+    '#T5KBH4': '',
+    '#NV6BPK': '',
+    '#LORZQI': '',
+    '#JPI0TQ': '',
+    '#P4B05K': '',
+    '#6YGZWX': '',
+    '#DU8C8P': ''
 };
 
 let imgTags = [];
@@ -1129,8 +1152,27 @@ setInterval(() => {
 }, 4);
 
 let armsMaterial;
-let protectedPlayers = [];
+let playerStructs = {};
 let playerList;
+const weaponColors = {
+    Bayonet: "#AAFFAA",
+    Tomahawk: "#AAFFAA",
+    Shark: "#31fa31",
+    Weatie: "#ff0000",
+    LAR: "#ffe15c",
+    VITA: "#ff00ea",
+    M60: "#00ebff",
+    "MAC-10": "#065000",
+    "AR-9": "#6a26e0",
+    SCAR: "#ff9c08",
+}
+
+class Player {
+    constructor(spawnProtected, wName) {
+        this.spawnProtected = spawnProtected;
+        this.wName = wName;
+    }
+}
 
 
 function animate() {
@@ -1267,11 +1309,24 @@ function animate() {
 
     try {
 
-        protectedPlayers = []
+        try {
+            playerStructs = {}
 
-        playerList?.$items.forEach((e) => {
-            if (e && e.spawnProtected) protectedPlayers.push(e.name);
-        });
+            if (playerList?.$items) {
+
+                for(let key of playerList.$items.keys()){
+                    const e = playerList?.$items.get(key);
+                    if (e && e.sessionId) playerStructs[e.sessionId] = new Player(e.spawnProtected, e.wName);
+                }
+
+                /*for (let i = 0; i < playerList.$items.size; i++) {
+                    const e = playerList?.$items[i];
+                    console.log(e)
+                    if (e && e.sessionId) playerStructs[e.sessionId] = new Player(e.spawnProtected, e.wName);
+                }*/
+            }
+        } catch {
+        }
 
 
         let localPlayerClass = scene["children"]["0"]["parent"]["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["38"].wnWmN;
@@ -1290,7 +1345,8 @@ function animate() {
             let color = hexToRgb("#0000ff");
             if (!localPlayerClass.team || localPlayerClass.team !== player["50"].team) {
                 color = hexToRgb("#ff0000");
-                if (protectedPlayers.includes(player["50"].name)) color = hexToRgb('#ff2222');
+                if (weaponHighlighter) color = hexToRgb(weaponColors[playerStructs[player["50"].sessionId].wName]);
+                if (playerStructs[player["50"].sessionId].spawnProtected) color = hexToRgb('#ff2222');
             }
 
             let r = (rgbHighlight ? redHighlight : color.r) / 255;
@@ -1463,33 +1519,6 @@ function checkSearchLobby() {
     } else alert('No Lobby found - consider changing your settings'); //popup ohne alert?
 }
 
-function setWireframe(bool, material) {
-    material.wireframe = bool;
-    material.color.r = bool ? redWireframe / 255 : 1;
-    material.color.g = bool ? greenWireframe / 255 : 1;
-    material.color.b = bool ? blueWireframe / 255 : 1;
-}
-
-
-function toggleGui() {
-    menuVisible = !menuVisible;
-    if (menuVisible) {
-        document.exitPointerLock();
-        gui.style.display = 'inline-block';
-    } else {
-        gui.style.display = 'none';
-    }
-    settings.set('menuOpen', menuVisible);
-}
-
-function hexToRgb(hex) {
-    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : null;
-}
 
 Object.defineProperty(Object.prototype, '_players', {
     set(v) {
@@ -1540,3 +1569,32 @@ Object.defineProperty(Audio.prototype, 'muted', {
         return noKillSound;
     }
 });
+
+
+function setWireframe(bool, material) {
+    material.wireframe = bool;
+    material.color.r = bool ? redWireframe / 255 : 1;
+    material.color.g = bool ? greenWireframe / 255 : 1;
+    material.color.b = bool ? blueWireframe / 255 : 1;
+}
+
+
+function toggleGui() {
+    menuVisible = !menuVisible;
+    if (menuVisible) {
+        document.exitPointerLock();
+        gui.style.display = 'inline-block';
+    } else {
+        gui.style.display = 'none';
+    }
+    settings.set('menuOpen', menuVisible);
+}
+
+function hexToRgb(hex) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
