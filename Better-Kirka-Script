@@ -913,7 +913,7 @@ const badgeLinks = {
     '#LORZQI': '',
     '#JPI0TQ': '',
     '#P4B05K': '',
-    '#6YGZWX': '',
+    '#6YGZWX': 'https://cdn.discordapp.com/attachments/738010330780926004/1048757530706333757/lelBadge.png',
     '#DU8C8P': ''
 };
 
