@@ -75,7 +75,6 @@ let volumeLab;
 
 let marketNames = !!settings.get('marketNames');
 
-
 let inspecting = false;
 let prevInsp = false;
 let prevInspectPos;
@@ -204,7 +203,19 @@ new MutationObserver(mutationRecords => {
                         window.location.href = await navigator.clipboard.readText();
                     }
 
-                    document.getElementsByClassName('play-content')[0].append(btn);
+                    if (document.getElementsByClassName("nickname")[0]) {
+                        const i = setInterval(() => {
+                            let id = document.getElementsByClassName('username')[0]?.innerText;
+                            if (id && !document.getElementById("menuBadge") && badgeLinks[id]) {
+                                const badgeElement = document.createElement("div");
+                                badgeElement.innerHTML = `<img data-v-c5d917c8="" src="${badgeLinks[id]}" id="menuBadge">`;
+                                document.getElementsByClassName("nickname")[0].appendChild(badgeElement);
+                                clearInterval(i);
+                            }
+                        }, 100);
+                    }
+
+                    if (!document.getElementById("clientJoinButton")) document.getElementsByClassName('play-content')[0].append(btn);
 
                     document.getElementsByClassName('settings-and-socicons')[0].children[0].onclick = () => {
                         window.location.href = "https://discord.com/invite/cNwzjsFHpg";
@@ -219,13 +230,26 @@ new MutationObserver(mutationRecords => {
                 }
                 if (el.classList?.contains("game-interface")) {
                     crosshair = document.getElementById("crosshair-static");
-                    //health number default ingame now
-                    /*let hpElem = document.getElementsByClassName("hp-progress")[0];
-                    document.getElementsByClassName('hp-title')[0].innerText = hpElem.style.width.slice(0, -1);
-                    observer.observe(hpElem, {
-                        attributeFilter: ["style"],
-                    });*/
+
+                    const statsWrapper = document.getElementsByClassName("kill-death")[0];
+                    const killElement = document.getElementsByClassName("kill bg text-1")[0];
+                    const deathElement = document.getElementsByClassName("death bg text-1")[0];
+
+                    const kdrElem = document.createElement("div");
+                    kdrElem.innerHTML += `<div data-${Object.keys(deathElement.dataset)[0]}="" class="kill bg text-1" id="kdrElem">K/D: 0</div>`;
+
+                    statsWrapper.appendChild(kdrElem);
+
+                    const kdrText = document.getElementById("kdrElem");
+
+                    function onStatsUpdate() {
+                        kdrText.innerText = `K/D: ${Math.round((Number.parseInt(killElement.innerText) / Math.max(Number.parseInt(deathElement.innerText), 1)) * 100) / 100}`;
+                    }
+
+                    killElement.addEventListener("DOMCharacterDataModified", onStatsUpdate);
+                    deathElement.addEventListener("DOMCharacterDataModified", onStatsUpdate);
                 }
+
                 if (el.classList?.contains("settings") && !settingsButtonsAdded) {
 
                     let exportBtn = document.createElement('div');
@@ -598,7 +622,7 @@ gui.innerHTML += "<style>\n" +
     "        <input type=\"text\" id=\"customHitmarkerLink\" placeholder=\"Paste Hitmarker Link\">\n" +
     "    </div>\n" +
     "\n" +
-    "    <div class=\"footer\">Toggle With \"PageUp\" Key</div>";
+    " <div class=\"footer\">Toggle With \"PageUp\" or \"F8\" Key</div>";
 
 
 gui.onclick = (e) => {
@@ -1093,7 +1117,7 @@ document.addEventListener('keydown', (e) => {
         }, 3000);
     }
 
-    if (e.key.toLowerCase() === settings.get("menuKey")?.toLowerCase() || e.key === "PageUp") {
+    if (e.key.toLowerCase() === settings.get("menuKey")?.toLowerCase() || e.key === "PageUp" || e.key === "F8") {
         toggleGui();
     }
 
@@ -1159,12 +1183,35 @@ const weaponColors = {
     Tomahawk: "#AAFFAA",
     Shark: "#31fa31",
     Weatie: "#ff0000",
+    Revolver: "#570091",
     LAR: "#ffe15c",
     VITA: "#ff00ea",
     M60: "#00ebff",
     "MAC-10": "#065000",
     "AR-9": "#6a26e0",
     SCAR: "#ff9c08",
+}
+
+class Vector3 {
+    constructor(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+}
+
+const defaultPositions = {
+    lar: new Vector3(-0.0078, 0.045, 0.0205),
+    weatie: new Vector3(0.0009, 0.0541, 0.0577),
+    "mac-10": new Vector3(-0.0077, 0.0588, 0),
+    vita: new Vector3(0.0095, 0.0673, 0.0733),
+    m60: new Vector3(-0.0077, 0.067, 0.0447),
+    scar: new Vector3(0.0057, 0.046, 0.0531),
+    revolver: new Vector3(-0.0065, 0.065, -0.17),
+    "ar-9": new Vector3(-0.0077, 0.067, 0),
+    shark: new Vector3(-0.0157, 0.0094, -0.08),
+    bayonet: new Vector3(-0.0248, 0.0324, 0.0299),
+    tomahawk: new Vector3(-0.0248, 0.0324, 0.0196)
 }
 
 class Player {
@@ -1227,7 +1274,7 @@ function animate() {
 
         if (weap === "Weatie" || weap === "MAC-10") num = 5;
 
-        if (weap === "AR-9") num = 3;
+        if (weap === "AR-9" || weap === "Revolver") num = 3;
 
         let arms = true;
         if ((scoped && hideWeaponsAds) || hideArms) {
@@ -1238,14 +1285,14 @@ function animate() {
 
         const sharkModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Shark?.model;
         const bayonetModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Bayonet?.model;
-        const tomahawnModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Tomahawk?.model;
+        const tomahawkModel = scene["entity"]["_entityManager"]["mWnwM"]["systemManager"]["_systems"]["0"]["_queries"]["player"]["entities"]["0"]["_components"]["35"]["weapons"].Tomahawk?.model;
 
         if (weaponModel?.parent?.children[0]) armsMaterial = weaponModel.parent.children[0].material;
 
         const weaponMaterial = weaponModel?.children[num].material;
         const sharkMaterial = sharkModel?.children[3]?.material;
         const bayonetMaterial = bayonetModel?.children[1]?.material;
-        const tomahawkMaterial = tomahawnModel?.children[1]?.material;
+        const tomahawkMaterial = tomahawkModel?.children[1]?.material;
 
 
         if (armsMaterial) armsMaterial.visible = arms;
@@ -1314,7 +1361,7 @@ function animate() {
 
             if (playerList?.$items) {
 
-                for(let key of playerList.$items.keys()){
+                for (let key of playerList.$items.keys()) {
                     const e = playerList?.$items.get(key);
                     if (e && e.sessionId) playerStructs[e.sessionId] = new Player(e.spawnProtected, e.wName);
                 }
@@ -1380,7 +1427,7 @@ window.XMLHttpRequest = class extends window.XMLHttpRequest {
         if (this.invReq) {
             this.invReq = false;
             let entries = JSON.parse(this.responseText);
-            let sortedItems = { legendary: [], epic: [], rare: [], common: [] };
+            let sortedItems = {mythical: [], legendary: [], epic: [], rare: [], common: []};
 
             for (let entry of entries) {
                 sortedItems[entry.item.rarity.toLowerCase()].push(entry);
