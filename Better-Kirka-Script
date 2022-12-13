@@ -940,7 +940,17 @@
         '#JPI0TQ': '',
         '#P4B05K': '',
         '#6YGZWX': 'https://cdn.discordapp.com/attachments/738010330780926004/1048757530706333757/lelBadge.png',
-        '#DU8C8P': ''
+        '#DU8C8P': '',
+        '#JT4VC2': '',
+        '#RFXB4H': 'https://cdn.discordapp.com/attachments/1040044875271385128/1050556879392223334/2.0-2.png',
+        '#CEZ7ES': '',
+        '#QH8CEO': '',
+        '#WFUHVE': '',
+        '#Y9W4QC': '',
+        '#SQ0VI1': '',
+        '#H8N3U4': '',
+        '#ZXDZQD': '',
+        '#EQJQ47': '',
     };
 
     let imgTags = [];
