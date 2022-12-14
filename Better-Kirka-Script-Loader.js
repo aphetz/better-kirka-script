@@ -12,7 +12,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     GM_xmlhttpRequest({
-        url: 'https://raw.githubusercontent.com/42infi/Better-Kirka-Script/main/Better-Kirka-Script',
+        url: 'https://raw.githubusercontent.com/aphetz/better-kirka-script/main/Better-Kirka-Script',
         method: "GET",
         nocache: true,
         cache: "no-cache",
