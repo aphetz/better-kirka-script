@@ -1123,10 +1123,7 @@
         }
 
         if (e.key === settings.get("inspectKey").toLowerCase()) {
-            inspecting = true;
-            setTimeout(() => {
-                inspecting = false
-            }, 3000);
+            inspecting = !inspecting;
         }
 
         if (e.key.toLowerCase() === settings.get("menuKey")?.toLowerCase() || e.key === "PageUp" || e.key === "F8") {
